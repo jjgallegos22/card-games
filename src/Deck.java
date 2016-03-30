@@ -1,81 +1,107 @@
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
-
-public class Deck
+/////////////////////////////////////////////////////////////
+public class Deck<C extends Card>
 {
-	private Card[] cards;
-	//private int index;
-	private int deckSize;
-	
-	public Deck()
+//-----------------------------------------------------------
+	private final int DECK_SIZE = 52;
+	private List<C> deck; // Deck
+	private int top;      // Top of deck
+	private Class<C> type;
+//-----------------------------------------------------------
+	public Deck( Class<C> type ) throws InstantiationException, IllegalAccessException
 	{
-		final int SIZE = 52;
-		this.cards = new Card[SIZE];
-		this.deckSize = SIZE;
+		this.type = type;
 		initDeck();
-		//index = SIZE - 1;
 	}
-	
-	private void initDeck()
+//-----------------------------------------------------------
+	private void initDeck() throws InstantiationException, IllegalAccessException
 	{
+		this.deck = new ArrayList<C>();
+		top = DECK_SIZE - 1;
 		int i, j;
-		int suitSize = deckSize / 4;
+		int suitSize = DECK_SIZE / 4;
 		for ( i = 0, j = 1; i < suitSize; i++, j++ )
-			cards[i] = new Card( j, Card.Suit.Heart );
+		{
+			C card = type.newInstance();
+			((Card)card).setCard( j, Card.Suit.Heart );
+			deck.add( card );
+		}
 		for ( i = suitSize, j = 1; i < suitSize*2; i++, j++ )
-			cards[i] = new Card( j, Card.Suit.Spade );
+		{
+			C card = type.newInstance();
+			((Card)card).setCard( j, Card.Suit.Spade );
+			deck.add( card );
+		}
 		for ( i = suitSize*2, j = 1; i < suitSize*3; i++, j++ )
-			cards[i] = new Card( j, Card.Suit.Diamond );
+		{
+			C card = type.newInstance();
+			((Card)card).setCard( j, Card.Suit.Diamond );
+			deck.add( card );
+		}
 		for ( i = suitSize*3, j = 1; i < suitSize*4; i++, j++ )
-			cards[i] = new Card( j, Card.Suit.Club );
+		{
+			C card = type.newInstance();
+			((Card)card).setCard( j, Card.Suit.Club );
+			deck.add( card );
+		}
 	}
-	
+//-----------------------------------------------------------
+	public void reshuffle() throws InstantiationException, IllegalAccessException
+	{
+		initDeck();
+		shuffle();
+	}
+//-----------------------------------------------------------
 	public void shuffle()
 	{
-		// Use shuffle sort
+		// Knuth Shuffle
 		Random rnd = new Random();
-		int[] unsorted = new int[deckSize];
-		for( int i = 0; i < unsorted.length; i++ )
-			unsorted[i] = rnd.nextInt( 1000 );
-		
-		for ( int i = 0; i < unsorted.length-1; i++ )
+		for ( int i = DECK_SIZE-1; i > 0; i-- )
 		{
-			int min = i;
-			for ( int j = i+1; j < unsorted.length; j++ )
+			int j = rnd.nextInt( i + 1 );
+			if ( i != j )
 			{
-				if ( unsorted[j] < unsorted[min] ) min = j;
+				C temp = deck.get( i );
+				deck.set( i, deck.get( j ) );
+				deck.set( j,  temp);
 			}
-			swap( unsorted, i, min );
-			swap( i, min );
 		}
 	}
-	
-	public void swap( int[] array, int i, int j )
+//-----------------------------------------------------------
+	public List<C> dealHand( int num )
 	{
-		int temp = array[i];
-		array[i] = array[j];
-		array[j] = temp;
+		assert ( num > top ); // Should be enough cards to deal
+		List<C> hand = new ArrayList<C>();
+		for ( int i = 0; i < num; i++ ) hand.add( dealCard() );
+		return hand;
 	}
-	
-	public void swap( int i , int j )
-	{
-		Card temp = cards[i];
-		cards[i] = cards[j];
-		cards[j] = temp;
-	}
-	 
-	public void print()
+//-----------------------------------------------------------
+	public C dealCard() { return deck.remove( top-- ); }
+//-----------------------------------------------------------
+	public int remainingCards() { return DECK_SIZE - top; }
+//-----------------------------------------------------------
+	public String toString()
 	{	
 		String str = "";
-		for ( int i = 0; i < deckSize; i++ )
+		for ( int i = 0; i < DECK_SIZE; i++ )
 		{
-			if ( i != 0 && ( i % 13 == 0 ) )
-			{
-				System.out.println( str );
-				str = "";
-			}
-			Card cur = cards[i];
-			str += cur.value() + "," + cur.suitString() + " ";
+			if ( i != 0 && ( i % 13 == 0 ) ) str += "\n";
+			str += deck.get( i ) + ", ";
 		}
-		System.out.println( str );
+		return str;
 	}
+//-----------------------------------------------------------
+	public void test()
+	{
+		System.out.println( this );
+		System.out.println("\nShuffling deck");
+		shuffle();
+		System.out.println( this );
+		System.out.println("\nDrawing cards: ");
+		while ( top >= 0 ) System.out.println( dealCard() );
+	}
+//-----------------------------------------------------------
 }
+/////////////////////////////////////////////////////////////
